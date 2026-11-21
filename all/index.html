@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta name="theme-color" content="#f5f9fc">
+
+  <title>HearWell — Hearing Screening</title>
+
+  <link rel="stylesheet" href="first.css">
+
+  <script src="first.js" defer></script>
+
+</head>
+
+<body>
+
+<header class="shell topbar">
+
+  <div class="brand">
+
+    <div class="logo">≈</div>
+
+    HearWell
+
+  </div>
+
+  <div class="navnote">A simple hearing awareness experience</div>
+
+</header>
+
+<main class="shell">
+
+  <section class="hero">
+
+    <div class="eyebrow">
+
+      <span class="dot"></span>
+
+      Hearing awareness
+
+    </div>
+
+    <h1>Get to know<br>your hearing.</h1>
+
+    <p>
+
+      A guided listening activity that lets you explore
+
+      a range of tones in a quiet space. Simple, private,
+
+      and easy to follow.
+
+    </p>
+
+  </section>
+
+  <section class="layout">
+
+    <div class="card maincard">
+
+      <!-- INTRODUCTION -->
+
+      <div id="intro">
+
+        <h2>Before you begin</h2>
+
+        <p class="sub">
+
+          A few quick checks will help you get a more
+
+          consistent experience.
+
+        </p>
+
+        <div class="tip">
+
+          <div class="tipicon">🎧</div>
+
+          <div>
+
+            <strong>Use headphones</strong>
+
+            <span>Use comfortable headphones if available.
+
+            This demo cannot verify which ear is receiving sound.</span>
+
+          </div>
+
+        </div>
+
+        <div class="tip">
+
+          <div class="tipicon">🌿</div>
+
+          <div>
+
+            <strong>Find a quiet place</strong>
+
+            <span>Reduce background noise and keep your
+
+            device volume low and comfortable.</span>
+
+          </div>
+
+        </div>
+
+        <div class="tip">
+
+          <div class="tipicon">⏸</div>
+
+          <div>
+
+            <strong>Take your time</strong>
+
+            <span>You can stop at any time. Never turn
+
+            the volume up to make a tone easier to hear.</span>
+
+          </div>
+
+        </div>
+
+        <div class="notice">
+
+          This is an educational listening demo, not a
+
+          calibrated hearing test or medical diagnosis.
+
+          It does not measure hearing thresholds.
+
+        </div>
+
+        <div style="margin-top:24px">
+
+          <button class="btn primary" id="start">
+
+            Start listening →
+
+          </button>
+
+        </div>
+
+      </div>
+
+      <!-- HEARING ACTIVITY -->
+
+      <div id="test" class="hidden">
+
+        <h2>Listen for the tone</h2>
+
+        <p class="sub">
+
+          Press play, then choose whether you heard
+
+          the sound.
+
+        </p>
+
+        <div class="steps">
+
+          <div class="step active"></div>
+
+          <div class="step"></div>
+
+          <div class="step"></div>
+
+          <div class="step"></div>
+
+          <div class="step"></div>
+
+          <div class="step"></div>
+
+        </div>
+
+        <div class="test-area">
+
+          <div class="earpill">
+
+            ♫ Tone <span id="toneNumber">1 of 6</span>
+
+          </div>
+
+          <div class="frequency" id="frequency">
+
+            250 <small>Hz</small>
+
+          </div>
+
+          <div class="wave" id="wave"></div>
+
+          <p class="prompt">
+
+            Press play and listen carefully.
+
+          </p>
+
+          <div class="actions">
+
+            <button class="btn primary" id="play">
+
+              ▶ Play tone
+
+            </button>
+
+            <button class="btn secondary" id="heard" disabled>
+
+              I heard it
+
+            </button>
+
+            <button class="btn quiet" id="notheard" disabled>
+
+              I didn't hear it
+
+            </button>
+
+          </div>
+
+          <div class="status" id="status" role="status" aria-live="polite">
+
+            Keep your volume low and comfortable.
+
+          </div>
+
+        </div>
+
+        <div class="progressrow">
+
+          <span>Activity progress</span>
+
+          <span id="progressText">0 of 6</span>
+
+        </div>
+
+        <div class="progressbar">
+
+          <div class="progressfill" id="progress"></div>
+
+        </div>
+
+        <div style="margin-top:18px">
+
+          <button class="btn quiet" id="stop">
+
+            Stop activity
+
+          </button>
+
+        </div>
+
+      </div>
+
+      <!-- RESULTS -->
+
+      <div id="results" class="result">
+
+        <div class="eyebrow">
+
+          <span class="dot"></span>
+
+          Activity complete
+
+        </div>
+
+        <h2 style="margin-top:17px">
+
+          Your listening recap
+
+        </h2>
+
+        <div class="resultscore" id="score">—</div>
+
+        <p id="summary">
+
+          Your responses are summarized below.
+
+        </p>
+
+        <div class="resultgrid">
+
+          <div class="resultbox">
+
+            <strong id="heardCount">0</strong>
+
+            <span>Tones you reported hearing</span>
+
+          </div>
+
+          <div class="resultbox">
+
+            <strong id="missedCount">0</strong>
+
+            <span>Tones you did not report hearing</span>
+
+          </div>
+
+        </div>
+
+        <h2 style="font-size:15px">
+
+          Your responses by tone
+
+        </h2>
+
+        <div class="history" id="history"></div>
+
+        <!-- PROFESSIONAL RECOMMENDATION -->
+
+        <div id="followup" class="followup hidden">
+
+          <h3>Consider a professional hearing check</h3>
+
+          <p>
+
+            You reported not hearing one or more tones
+
+            in this activity. This does not diagnose
+
+            hearing loss, but it is a good reason to
+
+            arrange a professional hearing evaluation.
+
+          </p>
+
+          <a
+
+            class="findlink"
+
+            href="https://www.asha.org/profind/"
+
+            target="_blank"
+
+            rel="noopener noreferrer"
+
+          >
+
+            Find an audiologist ↗
+
+          </a>
+
+        </div>
+
+        <div class="notice">
+
+          These results only describe your responses in
+
+          this browser activity. They cannot determine
+
+          whether your hearing is normal or identify
+
+          hearing loss. If you have concerns, arrange
+
+          a professional hearing evaluation.
+
+        </div>
+
+        <div style="margin-top:22px">
+
+          <button class="btn primary" id="again">
+
+            Try again
+
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- SIDEBAR -->
+
+    <aside class="card sidecard">
+
+      <h2>A calmer way to listen</h2>
+
+      <p class="sub">
+
+        A little preparation goes a long way.
+
+      </p>
+
+      <div class="tip">
+
+        <div class="tipicon">🔉</div>
+
+        <div>
+
+          <strong>Comfort first</strong>
+
+          <span>Keep device volume at a low,
+
+          comfortable setting.</span>
+
+        </div>
+
+      </div>
+
+      <div class="tip">
+
+        <div class="tipicon">🚫</div>
+
+        <div>
+
+          <strong>No guessing needed</strong>
+
+          <span>Choose the response that matches
+
+          what you actually heard.</span>
+
+        </div>
+
+      </div>
+
+      <div class="tip">
+
+        <div class="tipicon">🔒</div>
+
+        <div>
+
+          <strong>Private by design</strong>
+
+          <span>Your answers stay in this page
+
+          and are not uploaded.</span>
+
+        </div>
+
+      </div>
+
+      <div class="notice">
+
+        <strong>Good to know</strong><br>
+
+        This demo uses your device speakers or
+
+        headphones, which are not calibrated
+
+        medical equipment.
+
+      </div>
+
+    </aside>
+
+  </section>
+
+</main>
+
+<footer class="shell foot">
+
+  <span>© 2026 HearWell · Hearing awareness demo</span>
+
+  <span>Not a substitute for a professional hearing evaluation.</span>
+
+</footer>
+
+</body>
+
+</html>
+
