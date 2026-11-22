@@ -107,6 +107,52 @@ wave.classList.remove("playing");
 // PLAY SOUND FREQUENCY - IPHONE SAFARI COMPATIBILITY
 
 async function playTone() {
+try {
+$("status").textContent = "Testing audio...";
+
+const AudioContext =
+window.AudioContext || window.webkitAudioContext;
+
+if (!audioCtx || audioCtx.state === "closed") {
+audioCtx = new AudioContext();
+}
+
+const oscillator = audioCtx.createOscillator();
+const volume = audioCtx.createGain();
+
+oscillator.type = "sine";
+oscillator.frequency.value = 1000;
+
+volume.gain.value = 0.15;
+
+oscillator.connect(volume);
+volume.connect(audioCtx.destination);
+
+oscillator.start();
+
+const resumePromise = audioCtx.resume();
+
+await resumePromise;
+
+$("status").textContent =
+"Audio state: " + audioCtx.state;
+
+setTimeout(() => {
+try {
+oscillator.stop();
+oscillator.disconnect();
+volume.disconnect();
+} catch (e) {}
+}, 800);
+
+} catch (error) {
+console.error(error);
+$("status").textContent =
+"Audio error: " + error.message;
+}
+}
+
+
 
 stopTone();
 
