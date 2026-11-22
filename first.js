@@ -80,31 +80,36 @@ clearTimeout(stopTimer);
 stopTimer = null;
 }
 
-if (osc) {
-try {
-osc.stop();
-} catch (e) {}
+if (gain && audioCtx) {
 
 try {
-osc.disconnect();
+gain.gain.cancelScheduledValues(audioCtx.currentTime);
+
+gain.gain.setTargetAtTime(
+0,
+audioCtx.currentTime,
+.015
+);
+
+} catch (e) {}
+
+}
+
+if (osc && audioCtx) {
+
+try {
+osc.stop(audioCtx.currentTime + .08);
 } catch (e) {}
 
 osc = null;
-}
 
-if (gain) {
-try {
-gain.disconnect();
-} catch (e) {}
-
-gain = null;
 }
 
 wave.classList.remove("playing");
 
 }
 
-// PLAY SOUND FREQUENCY - IPHONE SAFARI COMPATIBILITY
+// PLAY SOUND FREQUENCY
 
 async function playTone() {
 
@@ -112,7 +117,6 @@ stopTone();
 
 $("heard").disabled = true;
 $("notheard").disabled = true;
-$("play").disabled = true;
 
 try {
 
@@ -120,36 +124,29 @@ const AudioContext =
 window.AudioContext || window.webkitAudioContext;
 
 if (!AudioContext) {
-throw new Error("AudioContext unavailable");
+
+$("status").textContent =
+"Audio playback is not supported in this browser.";
+
+return;
+
 }
 
-if (!audioCtx || audioCtx.state === "closed") {
-audioCtx = new AudioContext();
-}
+audioCtx = audioCtx || new AudioContext();
 
-// RESUME AUDIO CONTEXT
-
-if (audioCtx.state !== "running") {
+if (audioCtx.state === "suspended") {
 await audioCtx.resume();
 }
-
-if (audioCtx.state !== "running") {
-throw new Error("Audio context did not start");
-}
-
-// CREATE OSCILLATOR AND GAIN
 
 osc = audioCtx.createOscillator();
 gain = audioCtx.createGain();
 
 osc.type = "sine";
 
-osc.frequency.setValueAtTime(
-frequencies[index],
-audioCtx.currentTime
-);
+osc.frequency.value = frequencies[index];
 
-// AUDIO VOLUME ENVELOPE
+// Fixed low digital output level.
+// Device volume controls still apply.
 
 gain.gain.setValueAtTime(
 0,
@@ -157,12 +154,12 @@ audioCtx.currentTime
 );
 
 gain.gain.linearRampToValueAtTime(
-0.035,
-audioCtx.currentTime + 0.05
+.035,
+audioCtx.currentTime + .04
 );
 
 gain.gain.setValueAtTime(
-0.035,
+.035,
 audioCtx.currentTime + 1.15
 );
 
@@ -171,65 +168,42 @@ gain.gain.linearRampToValueAtTime(
 audioCtx.currentTime + 1.25
 );
 
-// CONNECT AUDIO
-
 osc.connect(gain);
 gain.connect(audioCtx.destination);
 
-const currentOsc = osc;
+osc.start();
 
-currentOsc.onended = () => {
-
-if (osc === currentOsc) {
-osc = null;
-}
-
-try {
-currentOsc.disconnect();
-} catch (e) {}
-
-};
-
-// START SOUND
-
-currentOsc.start();
-
-currentOsc.stop(
-audioCtx.currentTime + 1.27
-);
+osc.stop(audioCtx.currentTime + 1.27);
 
 played = true;
+
+$("play").disabled = true;
 
 $("status").textContent =
 "Playing a brief tone…";
 
-$("wave").classList.add("playing");
-
-// ENABLE ANSWERS AFTER PLAYBACK
+wave.classList.add("playing");
 
 stopTimer = setTimeout(() => {
 
 wave.classList.remove("playing");
 
+osc = null;
+
 $("status").textContent =
 "Did you hear the tone?";
 
 $("play").disabled = false;
+
 $("heard").disabled = false;
 $("notheard").disabled = false;
-
-stopTimer = null;
 
 }, 1350);
 
 } catch (e) {
 
-console.error("HearWell audio error:", e);
-
 $("status").textContent =
-"Audio could not start. Check your browser settings and try again.";
-
-$("play").disabled = false;
+"Could not play audio. Check your browser settings and try again.";
 
 }
 
@@ -329,31 +303,6 @@ $("history").appendChild(cell);
 
 $("start").addEventListener("click", () => {
 
-const AudioContext =
-window.AudioContext || window.webkitAudioContext;
-
-if (AudioContext) {
-
-try {
-
-if (!audioCtx || audioCtx.state === "closed") {
-audioCtx = new AudioContext();
-}
-
-if (audioCtx.state !== "running") {
-audioCtx.resume().catch(e => {
-console.error("Audio resume error:", e);
-});
-}
-
-} catch (e) {
-
-console.error("Audio initialization error:", e);
-
-}
-
-}
-
 index = 0;
 answers = [];
 
@@ -382,8 +331,6 @@ show("intro");
 });
 
 $("again").addEventListener("click", () => {
-
-stopTone();
 
 index = 0;
 answers = [];
