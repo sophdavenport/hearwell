@@ -1,295 +1,400 @@
 (() => {
-"use strict";
-
-const $ = (id) => document.getElementById(id);
 
 const frequencies = [250, 500, 1000, 2000, 4000, 6000];
 
+let index = 0;
+let answers = [];
 let audioCtx = null;
 let osc = null;
 let gain = null;
 let stopTimer = null;
-let index = 0;
 let played = false;
-let answers = [];
 
-const startButton = $("start");
-const playButton = $("play");
-const heardButton = $("heard");
-const notHeardButton = $("notheard");
-const stopButton = $("stop");
-const againButton = $("again");
-const status = $("status");
+const $ = id => document.getElementById(id);
+
+const intro = $("intro");
+const test = $("test");
+const results = $("results");
 const wave = $("wave");
 
-function setStatus(message) {
-if (status) status.textContent = message;
+// CREATE SOUND WAVE ANIMATION
+
+for (let i = 0; i < 25; i++) {
+const bar = document.createElement("span");
+
+bar.style.height =
+(12 + Math.abs(Math.sin(i * .72)) * 28) + "px";
+
+wave.appendChild(bar);
 }
 
-function getAudioContext() {
-const AudioContextClass =
-window.AudioContext || window.webkitAudioContext;
+// SWITCH BETWEEN SCREENS
 
-if (!AudioContextClass) {
-throw new Error("Audio is not supported by this browser.");
+function show(which) {
+
+intro.classList.toggle("hidden", which !== "intro");
+
+test.classList.toggle("hidden", which !== "test");
+
+results.classList.toggle("show", which === "results");
+
 }
 
-if (!audioCtx || audioCtx.state === "closed") {
-audioCtx = new AudioContextClass();
+// UPDATE TEST PROGRESS
+
+function update() {
+
+$("toneNumber").textContent =
+(index + 1) + " of " + frequencies.length;
+
+$("frequency").innerHTML =
+frequencies[index] + " <small>Hz</small>";
+
+$("progressText").textContent =
+index + " of " + frequencies.length;
+
+$("progress").style.width =
+(index / frequencies.length * 100) + "%";
+
+document.querySelectorAll(".steps .step").forEach((s, i) => {
+s.classList.toggle("active", i <= index);
+});
+
+$("status").textContent =
+"Keep your volume low and comfortable.";
+
+$("play").disabled = false;
+$("heard").disabled = true;
+$("notheard").disabled = true;
+
+played = false;
+
 }
 
-return audioCtx;
-}
+// STOP AUDIO
 
 function stopTone() {
+
 if (stopTimer) {
 clearTimeout(stopTimer);
 stopTimer = null;
 }
 
-if (gain && audioCtx) {
-try {
-gain.gain.cancelScheduledValues(audioCtx.currentTime);
-gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.015);
-} catch (error) {}
-}
-
 if (osc) {
 try {
 osc.stop();
-} catch (error) {}
+} catch (e) {}
+
+try {
+osc.disconnect();
+} catch (e) {}
+
 osc = null;
 }
 
-if (wave) wave.classList.remove("playing");
-}
-
-function prepareAudio() {
+if (gain) {
 try {
-const context = getAudioContext();
+gain.disconnect();
+} catch (e) {}
 
-if (context.state !== "running") {
-context.resume().catch((error) => {
-console.error("HearWell audio resume error:", error);
-setStatus("Audio could not start. Tap Start listening again.");
-});
-}
-} catch (error) {
-console.error("HearWell audio setup error:", error);
-setStatus(error.message || "Audio is unavailable in this browser.");
-}
+gain = null;
 }
 
-function playTone() {
+wave.classList.remove("playing");
+
+}
+
+// PLAY SOUND FREQUENCY - IPHONE SAFARI COMPATIBILITY
+
+async function playTone() {
+
 stopTone();
 
-if (heardButton) heardButton.disabled = true;
-if (notHeardButton) notHeardButton.disabled = true;
+$("heard").disabled = true;
+$("notheard").disabled = true;
+$("play").disabled = true;
 
 try {
-const context = getAudioContext();
 
-// Request audio playback directly from the button interaction.
-const resumePromise =
-context.state === "running" ? Promise.resolve() : context.resume();
+const AudioContext =
+window.AudioContext || window.webkitAudioContext;
 
-osc = context.createOscillator();
-gain = context.createGain();
+if (!AudioContext) {
+throw new Error("AudioContext unavailable");
+}
+
+if (!audioCtx || audioCtx.state === "closed") {
+audioCtx = new AudioContext();
+}
+
+// RESUME AUDIO CONTEXT
+
+if (audioCtx.state !== "running") {
+await audioCtx.resume();
+}
+
+if (audioCtx.state !== "running") {
+throw new Error("Audio context did not start");
+}
+
+// CREATE OSCILLATOR AND GAIN
+
+osc = audioCtx.createOscillator();
+gain = audioCtx.createGain();
 
 osc.type = "sine";
+
 osc.frequency.setValueAtTime(
 frequencies[index],
-context.currentTime
+audioCtx.currentTime
 );
 
-gain.gain.setValueAtTime(0, context.currentTime);
+// AUDIO VOLUME ENVELOPE
+
+gain.gain.setValueAtTime(
+0,
+audioCtx.currentTime
+);
+
 gain.gain.linearRampToValueAtTime(
 0.035,
-context.currentTime + 0.04
+audioCtx.currentTime + 0.05
 );
+
 gain.gain.setValueAtTime(
 0.035,
-context.currentTime + 1.15
+audioCtx.currentTime + 1.15
 );
+
 gain.gain.linearRampToValueAtTime(
 0,
-context.currentTime + 1.25
+audioCtx.currentTime + 1.25
 );
 
-osc.connect(gain);
-gain.connect(context.destination);
+// CONNECT AUDIO
 
-// Start the oscillator immediately after the user taps.
-osc.start(context.currentTime);
-osc.stop(context.currentTime + 1.27);
+osc.connect(gain);
+gain.connect(audioCtx.destination);
+
+const currentOsc = osc;
+
+currentOsc.onended = () => {
+
+if (osc === currentOsc) {
+osc = null;
+}
+
+try {
+currentOsc.disconnect();
+} catch (e) {}
+
+};
+
+// START SOUND
+
+currentOsc.start();
+
+currentOsc.stop(
+audioCtx.currentTime + 1.27
+);
 
 played = true;
 
-if (playButton) playButton.disabled = true;
-setStatus("Playing a brief tone…");
-if (wave) wave.classList.add("playing");
+$("status").textContent =
+"Playing a brief tone…";
 
-resumePromise.then(() => {
-if (context.state !== "running") {
-setStatus("Audio is not active. Tap Play tone to try again.");
-}
-}).catch((error) => {
-console.error("HearWell audio resume error:", error);
-setStatus("Audio could not start. Please try again.");
-});
+$("wave").classList.add("playing");
+
+// ENABLE ANSWERS AFTER PLAYBACK
 
 stopTimer = setTimeout(() => {
-if (wave) wave.classList.remove("playing");
-osc = null;
 
-setStatus("Did you hear the tone?");
+wave.classList.remove("playing");
 
-if (playButton) playButton.disabled = false;
-if (heardButton) heardButton.disabled = false;
-if (notHeardButton) notHeardButton.disabled = false;
+$("status").textContent =
+"Did you hear the tone?";
+
+$("play").disabled = false;
+$("heard").disabled = false;
+$("notheard").disabled = false;
+
+stopTimer = null;
+
 }, 1350);
 
-} catch (error) {
-console.error("HearWell audio error:", error);
-setStatus(
-error.name + ": " + error.message
-);
+} catch (e) {
 
-if (playButton) playButton.disabled = false;
-}
-}
+console.error("HearWell audio error:", e);
 
-function updateScreen() {
-const frequencyLabel = $("frequency");
-const progress = $("progress");
+$("status").textContent =
+"Audio could not start. Check your browser settings and try again.";
 
-if (frequencyLabel) {
-frequencyLabel.textContent = frequencies[index] + " Hz";
+$("play").disabled = false;
+
 }
 
-if (progress) {
-progress.textContent =
-"Tone " + (index + 1) + " of " + frequencies.length;
-}
 }
 
-function recordAnswer(heard) {
+// RECORD ANSWER
+
+function answer(value) {
+
 if (!played) return;
 
+stopTone();
+
 answers.push({
-frequency: frequencies[index],
-heard: heard
+
+hz: frequencies[index],
+
+heard: value
+
 });
 
-stopTone();
 index++;
-played = false;
 
-if (index < frequencies.length) {
-updateScreen();
-setStatus("Ready for the next tone.");
-if (playButton) playButton.disabled = false;
-if (heardButton) heardButton.disabled = true;
-if (notHeardButton) notHeardButton.disabled = true;
-} else {
-finishScreening();
-}
+if (index >= frequencies.length) {
+
+finish();
+
+return;
+
 }
 
-function finishScreening() {
-stopTone();
+update();
 
-const heardCount = answers.filter(
-(answer) => answer.heard
-).length;
-
-const result = $("result");
-const screening = $("screening");
-
-if (screening) screening.hidden = true;
-if (result) result.hidden = false;
-
-const resultMessage = $("result-message");
-
-if (resultMessage) {
-if (heardCount === frequencies.length) {
-resultMessage.textContent =
-"You reported hearing all the tones in this listening activity. This is not a medical hearing test.";
-} else {
-resultMessage.textContent =
-"You did not report hearing every tone. Consider arranging a professional hearing evaluation with an audiologist or healthcare professional.";
-}
 }
 
-setStatus("Listening activity complete.");
+// DISPLAY RESULTS
+
+function finish() {
+
+show("results");
+
+const heard = answers.filter(a => a.heard).length;
+
+const missed = answers.length - heard;
+
+$("score").textContent =
+heard + " / " + answers.length;
+
+$("heardCount").textContent = heard;
+
+$("missedCount").textContent = missed;
+
+$("summary").textContent = missed > 0
+
+? "You reported hearing " + heard +
+" of the " + answers.length +
+" tones. Consider following up with a professional."
+
+: "You reported hearing all the tones in this activity. This does not rule out a hearing concern.";
+
+// SHOW RECOMMENDATION IF ANY TONES WERE NOT HEARD
+
+$("followup").classList.toggle(
+"hidden",
+missed === 0
+);
+
+$("progress").style.width = "100%";
+
+$("progressText").textContent =
+answers.length + " of " + answers.length;
+
+// DISPLAY INDIVIDUAL RESPONSES
+
+$("history").innerHTML = "";
+
+answers.forEach(a => {
+
+const cell = document.createElement("div");
+
+cell.className = a.heard ? "heard" : "missed";
+
+cell.textContent =
+(a.hz >= 1000 ? (a.hz / 1000) + "k" : a.hz) + " Hz";
+
+cell.title = a.heard
+? "Reported heard"
+: "Not reported heard";
+
+$("history").appendChild(cell);
+
+});
+
 }
 
-function startScreening() {
+// BUTTON EVENTS
+
+$("start").addEventListener("click", () => {
+
+const AudioContext =
+window.AudioContext || window.webkitAudioContext;
+
+if (AudioContext) {
+
+try {
+
+if (!audioCtx || audioCtx.state === "closed") {
+audioCtx = new AudioContext();
+}
+
+if (audioCtx.state !== "running") {
+audioCtx.resume().catch(e => {
+console.error("Audio resume error:", e);
+});
+}
+
+} catch (e) {
+
+console.error("Audio initialization error:", e);
+
+}
+
+}
+
 index = 0;
 answers = [];
-played = false;
 
-prepareAudio();
+show("test");
 
-const intro = $("intro");
-const screening = $("screening");
-const result = $("result");
+update();
 
-if (intro) intro.hidden = true;
-if (screening) screening.hidden = false;
-if (result) result.hidden = true;
+});
 
-if (playButton) playButton.disabled = false;
-if (heardButton) heardButton.disabled = true;
-if (notHeardButton) notHeardButton.disabled = true;
+$("play").addEventListener("click", playTone);
 
-updateScreen();
-setStatus("Tap Play tone when you're ready.");
-}
+$("heard").addEventListener("click", () => {
+answer(true);
+});
 
-function resetScreening() {
+$("notheard").addEventListener("click", () => {
+answer(false);
+});
+
+$("stop").addEventListener("click", () => {
+
+stopTone();
+
+show("intro");
+
+});
+
+$("again").addEventListener("click", () => {
+
 stopTone();
 
 index = 0;
 answers = [];
-played = false;
 
-const intro = $("intro");
-const screening = $("screening");
-const result = $("result");
+show("intro");
 
-if (intro) intro.hidden = false;
-if (screening) screening.hidden = true;
-if (result) result.hidden = true;
+});
 
-setStatus("Keep your volume low and comfortable.");
-}
+// STOP SOUND WHEN LEAVING PAGE
 
-if (startButton) {
-startButton.addEventListener("click", startScreening);
-}
+window.addEventListener("pagehide", stopTone);
 
-if (playButton) {
-playButton.addEventListener("click", playTone);
-}
-
-if (heardButton) {
-heardButton.addEventListener("click", () => recordAnswer(true));
-}
-
-if (notHeardButton) {
-notHeardButton.addEventListener("click", () => recordAnswer(false));
-}
-
-if (stopButton) {
-stopButton.addEventListener("click", resetScreening);
-}
-
-if (againButton) {
-againButton.addEventListener("click", resetScreening);
-}
-
-updateScreen();
 })();
-
 
