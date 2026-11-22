@@ -303,6 +303,19 @@ $("history").appendChild(cell);
 
 $("start").addEventListener("click", () => {
 
+const AudioContext =
+window.AudioContext || window.webkitAudioContext;
+
+if (AudioContext) {
+try {
+audioCtx = audioCtx || new AudioContext();
+
+if (audioCtx.state === "suspended") {
+audioCtx.resume().catch(() => {});
+}
+} catch (e) {}
+}
+
 index = 0;
 answers = [];
 
