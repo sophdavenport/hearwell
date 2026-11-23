@@ -8,7 +8,6 @@
 
 <title>HearWell — Hearing Screening</title>
 
-<!-- CORRECT FILE REFERENCES -->
 <link rel="stylesheet" href="first.css">
 <script src="first.js" defer></script>
 </head>
@@ -102,8 +101,6 @@ the volume up to make a tone easier to hear.
 
 </div>
 
-<!-- IPHONE AUDIO REMINDER -->
-
 <div class="tip">
 
 <div class="tipicon">🔔</div>
@@ -123,6 +120,91 @@ Keep your volume at a comfortable level.
 This is an educational listening demo, not a
 calibrated hearing test or medical diagnosis.
 It does not measure hearing thresholds.
+</div>
+
+<!-- HEARING HISTORY QUESTIONNAIRE -->
+
+<div class="hearing-history">
+
+<h2>About your hearing</h2>
+
+<p class="sub">
+Before we begin, tell us a little about your
+hearing experience. This section is optional.
+</p>
+
+<div class="history-question">
+
+<strong>Do you experience any of the following?</strong>
+
+<label>
+<input type="checkbox" name="symptoms" value="Ringing or buzzing in your ears">
+Ringing or buzzing in your ears
+</label>
+
+<label>
+<input type="checkbox" name="symptoms" value="Difficulty hearing conversations">
+Difficulty hearing conversations
+</label>
+
+<label>
+<input type="checkbox" name="symptoms" value="Frequently asking people to repeat themselves">
+Frequently asking people to repeat themselves
+</label>
+
+<label>
+<input type="checkbox" name="symptoms" value="Difficulty hearing in noisy environments">
+Difficulty hearing in noisy environments
+</label>
+
+<label>
+<input type="checkbox" name="symptoms" value="One ear hears differently than the other">
+One ear hears differently than the other
+</label>
+
+<label>
+<input type="checkbox" name="symptoms" value="None of these" id="noSymptoms">
+None of these
+</label>
+
+</div>
+
+<div class="history-question">
+
+<strong>Do you have more difficulty hearing with one ear?</strong>
+
+<label>
+<input type="radio" name="earDifficulty" value="Left ear">
+Left ear
+</label>
+
+<label>
+<input type="radio" name="earDifficulty" value="Right ear">
+Right ear
+</label>
+
+<label>
+<input type="radio" name="earDifficulty" value="Both ears">
+Both ears
+</label>
+
+<label>
+<input type="radio" name="earDifficulty" value="Not sure">
+Not sure
+</label>
+
+<label>
+<input type="radio" name="earDifficulty" value="No difficulty">
+No difficulty
+</label>
+
+</div>
+
+<p class="sub">
+Your answers are optional and will not affect
+your listening activity score.
+</p>
+
 </div>
 
 <div style="margin-top:24px">
@@ -252,6 +334,10 @@ Your responses by tone
 </h2>
 
 <div class="history" id="history"></div>
+
+<!-- HEARING HISTORY RESULTS -->
+
+<div id="hearingHistory" class="hearing-history-results"></div>
 
 <!-- PROFESSIONAL RECOMMENDATION -->
 
