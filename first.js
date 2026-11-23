@@ -11,6 +11,10 @@ let gain = null;
 let stopTimer = null;
 let played = false;
 
+// HEARING HISTORY DATA
+
+let hearingHistoryData = null;
+
 const $ = id => document.getElementById(id);
 
 const intro = $("intro");
@@ -18,15 +22,27 @@ const test = $("test");
 const results = $("results");
 const wave = $("wave");
 
+const noSymptoms = $("noSymptoms");
+
+const symptomCheckboxes = document.querySelectorAll(
+'input[name="symptoms"]:not(#noSymptoms)'
+);
+
+const hearingHistory = $("hearingHistory");
+
 // CREATE SOUND WAVE ANIMATION
+
 for (let i = 0; i < 25; i++) {
 const bar = document.createElement("span");
+
 bar.style.height =
 (12 + Math.abs(Math.sin(i * .72)) * 28) + "px";
+
 wave.appendChild(bar);
 }
 
 // AUDIO INITIALIZATION
+
 function getAudioContext() {
 const AudioContextClass =
 window.AudioContext || window.webkitAudioContext;
@@ -43,6 +59,7 @@ return audioCtx;
 }
 
 // SWITCH BETWEEN SCREENS
+
 function show(which) {
 intro.classList.toggle("hidden", which !== "intro");
 test.classList.toggle("hidden", which !== "test");
@@ -50,6 +67,7 @@ results.classList.toggle("show", which === "results");
 }
 
 // UPDATE TEST PROGRESS
+
 function update() {
 $("toneNumber").textContent =
 (index + 1) + " of " + frequencies.length;
@@ -78,6 +96,7 @@ played = false;
 }
 
 // STOP AUDIO
+
 function stopTone() {
 if (stopTimer) {
 clearTimeout(stopTimer);
@@ -87,11 +106,13 @@ stopTimer = null;
 if (gain && audioCtx) {
 try {
 gain.gain.cancelScheduledValues(audioCtx.currentTime);
+
 gain.gain.setTargetAtTime(
 0,
 audioCtx.currentTime,
 0.015
 );
+
 } catch (e) {}
 }
 
@@ -108,6 +129,7 @@ wave.classList.remove("playing");
 }
 
 // PLAY SOUND FREQUENCY
+
 function playTone() {
 stopTone();
 
@@ -123,17 +145,20 @@ const context = getAudioContext();
 // IMPORTANT:
 // Call resume immediately inside the button click.
 // This is especially important for iPhone Safari.
+
 const resumePromise =
 context.state === "running"
 ? Promise.resolve()
 : context.resume();
 
 resumePromise.then(() => {
+
 if (context.state !== "running") {
 throw new Error("Audio context did not start.");
 }
 
 // Create the tone only after audio is running.
+
 osc = context.createOscillator();
 gain = context.createGain();
 
@@ -176,6 +201,7 @@ $("status").textContent = "Playing a brief tone…";
 wave.classList.add("playing");
 
 stopTimer = setTimeout(() => {
+
 osc = null;
 
 wave.classList.remove("playing");
@@ -186,28 +212,34 @@ $("status").textContent =
 $("play").disabled = false;
 $("heard").disabled = false;
 $("notheard").disabled = false;
+
 }, 1350);
 
 }).catch(error => {
+
 console.error("HearWell audio error:", error);
 
 $("status").textContent =
 "Audio could not start. Please tap Play tone again.";
 
 $("play").disabled = false;
+
 });
 
 } catch (error) {
+
 console.error("HearWell audio error:", error);
 
 $("status").textContent =
 error.message || "Could not start audio.";
 
 $("play").disabled = false;
+
 }
 }
 
 // RECORD ANSWER
+
 function answer(value) {
 if (!played) return;
 
@@ -228,18 +260,125 @@ return;
 update();
 }
 
+// COLLECT HEARING HISTORY
+
+function getHearingHistory() {
+
+const symptoms = [];
+
+symptomCheckboxes.forEach(box => {
+if (box.checked) {
+symptoms.push(box.value);
+}
+});
+
+if (noSymptoms.checked) {
+symptoms.push("None of these");
+}
+
+const ear = document.querySelector(
+'input[name="earDifficulty"]:checked'
+);
+
+return {
+symptoms: symptoms,
+earDifficulty: ear ? ear.value : "Not answered"
+};
+
+}
+
+// NONE OF THESE CHECKBOX BEHAVIOR
+
+noSymptoms.addEventListener("change", () => {
+
+if (noSymptoms.checked) {
+
+symptomCheckboxes.forEach(box => {
+box.checked = false;
+});
+
+}
+
+});
+
+symptomCheckboxes.forEach(box => {
+
+box.addEventListener("change", () => {
+
+if (box.checked) {
+noSymptoms.checked = false;
+}
+
+});
+
+});
+
+// DISPLAY HEARING HISTORY RESULTS
+
+function displayHearingHistory() {
+
+const data = hearingHistoryData;
+
+hearingHistory.innerHTML = "";
+
+const heading = document.createElement("h3");
+
+heading.textContent = "Your hearing history";
+
+hearingHistory.appendChild(heading);
+
+// REPORTED SYMPTOMS
+
+const symptomHeading = document.createElement("strong");
+
+symptomHeading.textContent = "Reported experiences";
+
+hearingHistory.appendChild(symptomHeading);
+
+const symptomText = document.createElement("p");
+
+symptomText.textContent = data.symptoms.length > 0
+? data.symptoms.join(", ")
+: "No symptoms selected.";
+
+hearingHistory.appendChild(symptomText);
+
+// EAR DIFFICULTY
+
+const earHeading = document.createElement("strong");
+
+earHeading.textContent = "Hearing difficulty by ear";
+
+hearingHistory.appendChild(earHeading);
+
+const earText = document.createElement("p");
+
+earText.textContent = data.earDifficulty;
+
+hearingHistory.appendChild(earText);
+
+}
+
 // DISPLAY RESULTS
+
 function finish() {
+
 stopTone();
 show("results");
 
+// DISPLAY QUESTIONNAIRE ANSWERS
+
+displayHearingHistory();
+
 const heard = answers.filter(a => a.heard).length;
+
 const missed = answers.length - heard;
 
 $("score").textContent =
 heard + " / " + answers.length;
 
 $("heardCount").textContent = heard;
+
 $("missedCount").textContent = missed;
 
 $("summary").textContent = missed > 0
@@ -259,9 +398,11 @@ $("progressText").textContent =
 answers.length + " of " + answers.length;
 
 // DISPLAY INDIVIDUAL RESPONSES
+
 $("history").innerHTML = "";
 
 answers.forEach(a => {
+
 const cell = document.createElement("div");
 
 cell.className = a.heard ? "heard" : "missed";
@@ -275,29 +416,45 @@ cell.title = a.heard
 : "Not reported heard";
 
 $("history").appendChild(cell);
+
 });
+
 }
 
 // BUTTON EVENTS
+
 $("start").addEventListener("click", () => {
+
 index = 0;
 answers = [];
 
-// Prime audio during the user's tap.
+// SAVE QUESTIONNAIRE ANSWERS
+
+hearingHistoryData = getHearingHistory();
+
+// PRIME AUDIO DURING THE USER'S TAP
+
 try {
+
 const context = getAudioContext();
 
 if (context.state !== "running") {
+
 context.resume().catch(error => {
 console.error("HearWell audio setup:", error);
 });
+
 }
+
 } catch (error) {
+
 console.error("HearWell audio setup:", error);
+
 }
 
 show("test");
 update();
+
 });
 
 $("play").addEventListener("click", playTone);
@@ -311,18 +468,27 @@ answer(false);
 });
 
 $("stop").addEventListener("click", () => {
+
 stopTone();
 show("intro");
+
 });
 
 $("again").addEventListener("click", () => {
+
 stopTone();
+
 index = 0;
 answers = [];
+
+hearingHistoryData = null;
+
 show("intro");
+
 });
 
 // STOP SOUND WHEN LEAVING PAGE
+
 window.addEventListener("pagehide", stopTone);
 
 })();
