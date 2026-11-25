@@ -1,495 +1,708 @@
-(() => {
-"use strict";
+// ==========================================
+// HEARWELL CONFIGURATION
+// ==========================================
 
-const frequencies = [250, 500, 1000, 2000, 4000, 6000];
+const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_PUBLIC_KEY";
 
-let index = 0;
-let answers = [];
-let audioCtx = null;
-let osc = null;
-let gain = null;
-let stopTimer = null;
-let played = false;
 
-// HEARING HISTORY DATA
+// ==========================================
+// DATABASE CONNECTION
+// ==========================================
 
-let hearingHistoryData = null;
+const supabaseReady =
+SUPABASE_URL.startsWith("https://") &&
+!SUPABASE_URL.includes("YOUR_") &&
+SUPABASE_ANON_KEY &&
+!SUPABASE_ANON_KEY.includes("YOUR_");
+
+const db = supabaseReady && window.supabase
+? window.supabase.createClient(
+SUPABASE_URL,
+SUPABASE_ANON_KEY
+)
+: null;
+
+
+// ==========================================
+// APP VARIABLES
+// ==========================================
 
 const $ = id => document.getElementById(id);
 
-const intro = $("intro");
-const test = $("test");
-const results = $("results");
-const wave = $("wave");
+let signup = false;
+let entries = [];
+let toastTimer;
 
-const noSymptoms = $("noSymptoms");
 
-const symptomCheckboxes = document.querySelectorAll(
-'input[name="symptoms"]:not(#noSymptoms)'
+// ==========================================
+// NOTIFICATIONS
+// ==========================================
+
+function toast(message) {
+$("toast").textContent = message;
+
+$("toast").classList.add("show");
+
+clearTimeout(toastTimer);
+
+toastTimer = setTimeout(() => {
+$("toast").classList.remove("show");
+}, 2800);
+}
+
+
+// ==========================================
+// AUTHENTICATION MESSAGES
+// ==========================================
+
+function authMsg(message, error = false) {
+$("authMessage").textContent = message;
+
+$("authMessage").classList.toggle("error", error);
+}
+
+
+// ==========================================
+// SCREEN MANAGEMENT
+// ==========================================
+
+function showAuth() {
+$("authScreen").classList.remove("hidden");
+$("appShell").classList.add("hidden");
+}
+
+function showApp(user) {
+$("authScreen").classList.add("hidden");
+$("appShell").classList.remove("hidden");
+
+$("userEmail").textContent = user.email || "";
+$("profileEmail").textContent = user.email || "";
+
+loadAll();
+}
+
+
+// ==========================================
+// NAVIGATION
+// ==========================================
+
+function page(name) {
+document.querySelectorAll(".page").forEach(section => {
+section.classList.toggle(
+"active",
+section.id === "page-" + name
 );
-
-const hearingHistory = $("hearingHistory");
-
-// CREATE SOUND WAVE ANIMATION
-
-for (let i = 0; i < 25; i++) {
-const bar = document.createElement("span");
-
-bar.style.height =
-(12 + Math.abs(Math.sin(i * .72)) * 28) + "px";
-
-wave.appendChild(bar);
-}
-
-// AUDIO INITIALIZATION
-
-function getAudioContext() {
-const AudioContextClass =
-window.AudioContext || window.webkitAudioContext;
-
-if (!AudioContextClass) {
-throw new Error("Audio is not supported by this browser.");
-}
-
-if (!audioCtx || audioCtx.state === "closed") {
-audioCtx = new AudioContextClass();
-}
-
-return audioCtx;
-}
-
-// SWITCH BETWEEN SCREENS
-
-function show(which) {
-intro.classList.toggle("hidden", which !== "intro");
-test.classList.toggle("hidden", which !== "test");
-results.classList.toggle("show", which === "results");
-}
-
-// UPDATE TEST PROGRESS
-
-function update() {
-$("toneNumber").textContent =
-(index + 1) + " of " + frequencies.length;
-
-$("frequency").innerHTML =
-frequencies[index] + " <small>Hz</small>";
-
-$("progressText").textContent =
-index + " of " + frequencies.length;
-
-$("progress").style.width =
-(index / frequencies.length * 100) + "%";
-
-document.querySelectorAll(".steps .step").forEach((step, i) => {
-step.classList.toggle("active", i <= index);
 });
 
-$("status").textContent =
-"Keep your volume low and comfortable.";
-
-$("play").disabled = false;
-$("heard").disabled = true;
-$("notheard").disabled = true;
-
-played = false;
-}
-
-// STOP AUDIO
-
-function stopTone() {
-if (stopTimer) {
-clearTimeout(stopTimer);
-stopTimer = null;
-}
-
-if (gain && audioCtx) {
-try {
-gain.gain.cancelScheduledValues(audioCtx.currentTime);
-
-gain.gain.setTargetAtTime(
-0,
-audioCtx.currentTime,
-0.015
+document.querySelectorAll(".nav-item").forEach(button => {
+button.classList.toggle(
+"active",
+button.dataset.page === name
 );
-
-} catch (e) {}
-}
-
-if (osc) {
-const oldOsc = osc;
-osc = null;
-
-try {
-oldOsc.stop(audioCtx.currentTime + 0.05);
-} catch (e) {}
-}
-
-wave.classList.remove("playing");
-}
-
-// PLAY SOUND FREQUENCY
-
-function playTone() {
-stopTone();
-
-$("heard").disabled = true;
-$("notheard").disabled = true;
-$("play").disabled = true;
-
-$("status").textContent = "Starting audio…";
-
-try {
-const context = getAudioContext();
-
-// IMPORTANT:
-// Call resume immediately inside the button click.
-// This is especially important for iPhone Safari.
-
-const resumePromise =
-context.state === "running"
-? Promise.resolve()
-: context.resume();
-
-resumePromise.then(() => {
-
-if (context.state !== "running") {
-throw new Error("Audio context did not start.");
-}
-
-// Create the tone only after audio is running.
-
-osc = context.createOscillator();
-gain = context.createGain();
-
-osc.type = "sine";
-
-osc.frequency.setValueAtTime(
-frequencies[index],
-context.currentTime
-);
-
-gain.gain.setValueAtTime(
-0,
-context.currentTime
-);
-
-gain.gain.linearRampToValueAtTime(
-0.035,
-context.currentTime + 0.04
-);
-
-gain.gain.setValueAtTime(
-0.035,
-context.currentTime + 1.15
-);
-
-gain.gain.linearRampToValueAtTime(
-0,
-context.currentTime + 1.25
-);
-
-osc.connect(gain);
-gain.connect(context.destination);
-
-osc.start(context.currentTime);
-osc.stop(context.currentTime + 1.27);
-
-played = true;
-
-$("status").textContent = "Playing a brief tone…";
-wave.classList.add("playing");
-
-stopTimer = setTimeout(() => {
-
-osc = null;
-
-wave.classList.remove("playing");
-
-$("status").textContent =
-"Did you hear the tone?";
-
-$("play").disabled = false;
-$("heard").disabled = false;
-$("notheard").disabled = false;
-
-}, 1350);
-
-}).catch(error => {
-
-console.error("HearWell audio error:", error);
-
-$("status").textContent =
-"Audio could not start. Please tap Play tone again.";
-
-$("play").disabled = false;
-
 });
 
-} catch (error) {
-
-console.error("HearWell audio error:", error);
-
-$("status").textContent =
-error.message || "Could not start audio.";
-
-$("play").disabled = false;
-
-}
+window.scrollTo(0, 0);
 }
 
-// RECORD ANSWER
+document.addEventListener("click", event => {
+const button = event.target.closest("[data-page]");
 
-function answer(value) {
-if (!played) return;
-
-stopTone();
-
-answers.push({
-hz: frequencies[index],
-heard: value
+if (button) {
+page(button.dataset.page);
+}
 });
 
-index++;
 
-if (index >= frequencies.length) {
-finish();
+// ==========================================
+// SIGN UP / SIGN IN
+// ==========================================
+
+$("toggleAuth").onclick = () => {
+
+signup = !signup;
+
+$("authTitle").textContent = signup
+? "Create your account"
+: "Welcome to HearWell";
+
+$("authSubmit").textContent = signup
+? "Create account"
+: "Sign in";
+
+$("toggleAuth").textContent = signup
+? "Already have an account? Sign in"
+: "New to HearWell? Create an account";
+
+$("password").autocomplete = signup
+? "new-password"
+: "current-password";
+
+authMsg("");
+};
+
+
+$("authForm").onsubmit = async event => {
+
+event.preventDefault();
+
+if (!db) {
+authMsg(
+"HearWell needs its Supabase connection configured before accounts can be created.",
+true
+);
+
 return;
 }
 
-update();
-}
+const email = $("email").value.trim();
+const password = $("password").value;
 
-// COLLECT HEARING HISTORY
-
-function getHearingHistory() {
-
-const symptoms = [];
-
-symptomCheckboxes.forEach(box => {
-if (box.checked) {
-symptoms.push(box.value);
-}
-});
-
-if (noSymptoms.checked) {
-symptoms.push("None of these");
-}
-
-const ear = document.querySelector(
-'input[name="earDifficulty"]:checked'
-);
-
-return {
-symptoms: symptoms,
-earDifficulty: ear ? ear.value : "Not answered"
-};
-
-}
-
-// NONE OF THESE CHECKBOX BEHAVIOR
-
-noSymptoms.addEventListener("change", () => {
-
-if (noSymptoms.checked) {
-
-symptomCheckboxes.forEach(box => {
-box.checked = false;
-});
-
-}
-
-});
-
-symptomCheckboxes.forEach(box => {
-
-box.addEventListener("change", () => {
-
-if (box.checked) {
-noSymptoms.checked = false;
-}
-
-});
-
-});
-
-// DISPLAY HEARING HISTORY RESULTS
-
-function displayHearingHistory() {
-
-const data = hearingHistoryData;
-
-hearingHistory.innerHTML = "";
-
-const heading = document.createElement("h3");
-
-heading.textContent = "Your hearing history";
-
-hearingHistory.appendChild(heading);
-
-// REPORTED SYMPTOMS
-
-const symptomHeading = document.createElement("strong");
-
-symptomHeading.textContent = "Reported experiences";
-
-hearingHistory.appendChild(symptomHeading);
-
-const symptomText = document.createElement("p");
-
-symptomText.textContent = data.symptoms.length > 0
-? data.symptoms.join(", ")
-: "No symptoms selected.";
-
-hearingHistory.appendChild(symptomText);
-
-// EAR DIFFICULTY
-
-const earHeading = document.createElement("strong");
-
-earHeading.textContent = "Hearing difficulty by ear";
-
-hearingHistory.appendChild(earHeading);
-
-const earText = document.createElement("p");
-
-earText.textContent = data.earDifficulty;
-
-hearingHistory.appendChild(earText);
-
-}
-
-// DISPLAY RESULTS
-
-function finish() {
-
-stopTone();
-show("results");
-
-// DISPLAY QUESTIONNAIRE ANSWERS
-
-displayHearingHistory();
-
-const heard = answers.filter(a => a.heard).length;
-
-const missed = answers.length - heard;
-
-$("score").textContent =
-heard + " / " + answers.length;
-
-$("heardCount").textContent = heard;
-
-$("missedCount").textContent = missed;
-
-$("summary").textContent = missed > 0
-? "You reported hearing " + heard +
-" of the " + answers.length +
-" tones. Consider following up with a professional."
-: "You reported hearing all the tones in this activity. This does not rule out a hearing concern.";
-
-$("followup").classList.toggle(
-"hidden",
-missed === 0
-);
-
-$("progress").style.width = "100%";
-
-$("progressText").textContent =
-answers.length + " of " + answers.length;
-
-// DISPLAY INDIVIDUAL RESPONSES
-
-$("history").innerHTML = "";
-
-answers.forEach(a => {
-
-const cell = document.createElement("div");
-
-cell.className = a.heard ? "heard" : "missed";
-
-cell.textContent =
-(a.hz >= 1000 ? (a.hz / 1000) + "k" : a.hz) +
-" Hz";
-
-cell.title = a.heard
-? "Reported heard"
-: "Not reported heard";
-
-$("history").appendChild(cell);
-
-});
-
-}
-
-// BUTTON EVENTS
-
-$("start").addEventListener("click", () => {
-
-index = 0;
-answers = [];
-
-// SAVE QUESTIONNAIRE ANSWERS
-
-hearingHistoryData = getHearingHistory();
-
-// PRIME AUDIO DURING THE USER'S TAP
+$("authSubmit").disabled = true;
 
 try {
 
-const context = getAudioContext();
+if (signup) {
 
-if (context.state !== "running") {
-
-context.resume().catch(error => {
-console.error("HearWell audio setup:", error);
+const { data, error } = await db.auth.signUp({
+email,
+password,
+options: {
+emailRedirectTo: location.origin + location.pathname
+}
 });
+
+if (error) throw error;
+
+if (data.session) {
+showApp(data.user);
+} else {
+authMsg(
+"Account created! Check your email for a confirmation link before signing in."
+);
+}
+
+} else {
+
+const { data, error } = await db.auth.signInWithPassword({
+email,
+password
+});
+
+if (error) throw error;
+
+showApp(data.user);
 
 }
 
 } catch (error) {
 
-console.error("HearWell audio setup:", error);
+authMsg(error.message || "Something went wrong.", true);
+
+} finally {
+
+$("authSubmit").disabled = false;
+
+}
+};
+
+
+// ==========================================
+// SIGN OUT
+// ==========================================
+
+$("signOut").onclick = async () => {
+
+if (db) {
+const { error } = await db.auth.signOut();
+
+if (error) {
+toast("Could not sign out: " + error.message);
+return;
+}
+}
+
+entries = [];
+
+showAuth();
+
+toast("Signed out.");
+
+};
+
+
+// ==========================================
+// LOAD SAVED HEALTH INFORMATION
+// ==========================================
+
+async function loadAll() {
+
+if (!db) return;
+
+const { data, error } = await db
+.from("health_entries")
+.select("*")
+.order("created_at", { ascending: false })
+.limit(300);
+
+if (error) {
+toast("Could not load entries: " + error.message);
+return;
+}
+
+entries = data || [];
+
+render();
 
 }
 
-show("test");
-update();
+
+// ==========================================
+// SAVE HEALTH INFORMATION
+// ==========================================
+
+async function save(type, details) {
+
+if (!db) {
+toast("Database connection is not configured yet.");
+return false;
+}
+
+const {
+data: { user },
+error: userError
+} = await db.auth.getUser();
+
+if (userError || !user) {
+showAuth();
+return false;
+}
+
+const { error } = await db
+.from("health_entries")
+.insert({
+user_id: user.id,
+entry_type: type,
+details: details
+});
+
+if (error) {
+toast("Save failed: " + error.message);
+return false;
+}
+
+await loadAll();
+
+toast("Saved to your HearWell account.");
+
+return true;
+
+}
+
+
+// ==========================================
+// PAIN TRACKER
+// ==========================================
+
+$("painLevel").oninput = () => {
+
+$("painLevelValue").textContent =
+$("painLevel").value;
+
+};
+
+
+$("painForm").onsubmit = async event => {
+
+event.preventDefault();
+
+const success = await save("pain", {
+
+level: Number($("painLevel").value),
+
+location: $("painLocation").value.trim(),
+
+type: $("painType").value,
+
+notes: $("painNotes").value.trim()
 
 });
 
-$("play").addEventListener("click", playTone);
+if (success) {
 
-$("heard").addEventListener("click", () => {
-answer(true);
+event.target.reset();
+
+$("painLevelValue").textContent = "0";
+
+}
+
+};
+
+
+// ==========================================
+// SYMPTOM TRACKER
+// ==========================================
+
+$("symptomSeverity").oninput = () => {
+
+$("severityValue").textContent =
+$("symptomSeverity").value;
+
+};
+
+
+$("symptomForm").onsubmit = async event => {
+
+event.preventDefault();
+
+const success = await save("symptom", {
+
+name: $("symptomName").value.trim(),
+
+severity: Number($("symptomSeverity").value),
+
+when: $("symptomWhen").value,
+
+notes: $("symptomNotes").value.trim()
+
 });
 
-$("notheard").addEventListener("click", () => {
-answer(false);
+if (success) {
+
+event.target.reset();
+
+$("severityValue").textContent = "3";
+
+}
+
+};
+
+
+// ==========================================
+// CHRONIC CONDITIONS
+// ==========================================
+
+$("conditionForm").onsubmit = async event => {
+
+event.preventDefault();
+
+const success = await save("condition", {
+
+name: $("conditionName").value.trim(),
+
+since: $("conditionSince").value.trim(),
+
+notes: $("conditionNotes").value.trim()
+
 });
 
-$("stop").addEventListener("click", () => {
+if (success) {
+event.target.reset();
+}
 
-stopTone();
-show("intro");
+};
+
+
+// ==========================================
+// MEDICATION ORGANIZER
+// ==========================================
+
+$("medicationForm").onsubmit = async event => {
+
+event.preventDefault();
+
+const success = await save("medication", {
+
+name: $("medName").value.trim(),
+
+dose: $("medDose").value.trim(),
+
+schedule: $("medSchedule").value.trim(),
+
+notes: $("medNotes").value.trim()
 
 });
 
-$("again").addEventListener("click", () => {
+if (success) {
+event.target.reset();
+}
 
-stopTone();
+};
 
-index = 0;
-answers = [];
 
-hearingHistoryData = null;
+// ==========================================
+// CREATE HEALTH HISTORY CARDS
+// ==========================================
 
-show("intro");
+function makeCard(row) {
+
+const details = row.details || {};
+
+const date = new Date(row.created_at).toLocaleString(
+[],
+{
+dateStyle: "medium",
+timeStyle: "short"
+}
+);
+
+let title = row.entry_type;
+let description = "";
+
+if (row.entry_type === "pain") {
+
+title = `Pain · ${details.level}/10`;
+
+description = [
+details.location,
+details.type,
+details.notes
+].filter(Boolean).join(" · ");
+
+}
+
+if (row.entry_type === "symptom") {
+
+title = `${details.name} · ${details.severity}/10`;
+
+description = [
+details.when,
+details.notes
+].filter(Boolean).join(" · ");
+
+}
+
+if (row.entry_type === "medication") {
+
+title = details.name;
+
+description = [
+details.dose,
+details.schedule,
+details.notes
+].filter(Boolean).join(" · ");
+
+}
+
+if (row.entry_type === "condition") {
+
+title = details.name;
+
+description = [
+details.since,
+details.notes
+].filter(Boolean).join(" · ");
+
+}
+
+const card = document.createElement("article");
+
+card.className = "entry-card";
+
+const meta = document.createElement("span");
+
+meta.className = "entry-meta";
+
+meta.textContent = row.entry_type + " · " + date;
+
+const heading = document.createElement("strong");
+
+heading.textContent = title;
+
+const paragraph = document.createElement("p");
+
+paragraph.textContent =
+description || "No additional notes.";
+
+card.append(meta, heading, paragraph);
+
+return card;
+
+}
+
+
+// ==========================================
+// UPDATE DASHBOARD
+// ==========================================
+
+function render() {
+
+const medications = entries.filter(
+entry => entry.entry_type === "medication"
+);
+
+const conditions = entries.filter(
+entry => entry.entry_type === "condition"
+);
+
+const painEntries = entries.filter(
+entry => entry.entry_type === "pain"
+);
+
+const symptomEntries = entries.filter(
+entry => entry.entry_type === "symptom"
+);
+
+
+$("entryCount").textContent = entries.length;
+
+$("conditionCount").textContent = conditions.length;
+
+$("latestEntry").textContent = entries.length
+? new Date(entries[0].created_at).toLocaleDateString()
+: "Not yet";
+
+
+$("painCount").textContent = painEntries.length;
+
+$("symptomCount").textContent = symptomEntries.length;
+
+$("medCount").textContent = medications.length;
+
+
+$("medicationList").replaceChildren(
+...medications.map(makeCard)
+);
+
+$("conditionList").replaceChildren(
+...conditions.map(makeCard)
+);
+
+$("recentEntries").replaceChildren(
+...entries.slice(0, 30).map(makeCard)
+);
+
+}
+
+
+// ==========================================
+// EXPORT HEALTH INFORMATION
+// ==========================================
+
+$("exportData").onclick = () => {
+
+const file = new Blob(
+[JSON.stringify(entries, null, 2)],
+{ type: "application/json" }
+);
+
+const url = URL.createObjectURL(file);
+
+const link = document.createElement("a");
+
+link.href = url;
+
+link.download = "hearwell-my-entries.json";
+
+link.click();
+
+URL.revokeObjectURL(url);
+
+};
+
+
+// ==========================================
+// DELETE JOURNAL ENTRIES
+// ==========================================
+
+$("deleteData").onclick = async () => {
+
+if (!db) {
+toast("Database is not connected.");
+return;
+}
+
+const confirmed = confirm(
+"Delete all your HearWell journal entries? This cannot be undone."
+);
+
+if (!confirmed) return;
+
+const {
+data: { user },
+error: userError
+} = await db.auth.getUser();
+
+if (userError || !user) {
+toast("Please sign in again.");
+return;
+}
+
+const { error } = await db
+.from("health_entries")
+.delete()
+.eq("user_id", user.id);
+
+if (error) {
+
+toast("Could not delete entries: " + error.message);
+
+} else {
+
+await loadAll();
+
+toast("Journal entries deleted.");
+
+}
+
+};
+
+
+// ==========================================
+// START HEARWELL
+// ==========================================
+
+async function init() {
+
+if (!db) {
+
+showAuth();
+
+authMsg(
+"Preview mode: connect your Supabase project to enable real accounts and cloud saving.",
+true
+);
+
+return;
+
+}
+
+const {
+data: { session },
+error
+} = await db.auth.getSession();
+
+if (error) {
+authMsg("Could not check your login. Please refresh.", true);
+return;
+}
+
+if (session?.user) {
+
+showApp(session.user);
+
+} else {
+
+showAuth();
+
+}
+
+db.auth.onAuthStateChange((event, session) => {
+
+if (event === "SIGNED_IN" && session?.user) {
+showApp(session.user);
+}
+
+if (event === "SIGNED_OUT") {
+entries = [];
+showAuth();
+}
 
 });
 
-// STOP SOUND WHEN LEAVING PAGE
+}
 
-window.addEventListener("pagehide", stopTone);
 
-})();
+// RUN APPLICATION
 
+init();
