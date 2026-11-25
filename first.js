@@ -2,8 +2,8 @@
 // HEARWELL CONFIGURATION
 // ==========================================
 
-const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_PUBLIC_KEY";
+const SUPABASE_URL = "https://snuktfammdnferqkjlcb.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_86VQ64PGjQQwOBFuqk8F7Q_-JuzxVCF";
 
 
 // ==========================================
