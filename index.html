@@ -1,464 +1,528 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#f5f9fc">
+<meta name="theme-color" content="#f3f8fc">
+<meta name="description" content="HearWell — Your health. Your story.">
 
-<title>HearWell — Hearing Screening</title>
+<title>HearWell</title>
 
 <link rel="stylesheet" href="first.css">
-<script src="first.js" defer></script>
 </head>
 
 <body>
 
-<header class="shell topbar">
+<!-- SIGN IN SCREEN -->
+<div id="authScreen" class="auth-wrap">
+<section class="auth-card">
 
-<div class="brand">
-<div class="logo">≈</div>
-HearWell
+<div class="brand brand-large">
+<span class="brand-mark">≈</span>
+<span>HearWell</span>
 </div>
 
-<div class="navnote">A simple hearing awareness experience</div>
+<p class="tagline">Your health. Your story.</p>
+
+<h1 id="authTitle">Welcome to HearWell</h1>
+<p class="muted">A calmer way to keep track of your health journey.</p>
+
+<form id="authForm">
+
+<label for="email">Email address</label>
+<input
+id="email"
+type="email"
+autocomplete="email"
+required
+placeholder="you@example.com"
+>
+
+<label for="password">Password</label>
+<input
+id="password"
+type="password"
+minlength="8"
+autocomplete="current-password"
+required
+placeholder="At least 8 characters"
+>
+
+<button id="authSubmit" class="button primary full" type="submit">
+Sign in
+</button>
+
+</form>
+
+<p id="authMessage" class="message" role="status"></p>
+
+<button id="toggleAuth" class="text-button" type="button">
+New to HearWell? Create an account
+</button>
+
+<p class="tiny muted">
+HearWell is an organizational tool, not a medical diagnosis or emergency service.
+</p>
+
+</section>
+</div>
+
+
+<!-- MAIN APPLICATION -->
+<div id="appShell" class="app-shell hidden">
+
+<header class="topbar">
+
+<a class="brand" href="#" data-page="home">
+<span class="brand-mark">≈</span>
+<span>HearWell</span>
+</a>
+
+<div class="topbar-actions">
+<span id="userEmail" class="user-email"></span>
+
+<button id="signOut" class="icon-button" type="button" aria-label="Sign out">
+↗
+</button>
+</div>
 
 </header>
 
-<main class="shell">
 
-<section class="hero">
+<main class="main-content">
 
-<div class="eyebrow">
-<span class="dot"></span>
-Hearing awareness
-</div>
+<!-- HOME -->
+<section id="page-home" class="page active">
 
-<h1>Get to know<br>your hearing.</h1>
+<div class="welcome-panel">
+<p class="eyebrow">YOUR PERSONAL HEALTH JOURNAL</p>
+
+<h1>Welcome back.</h1>
 
 <p>
-A guided listening activity that lets you explore
-a range of tones in a quiet space. Simple, private,
-and easy to follow.
+Take things one day at a time.
+Your health story belongs to you.
+</p>
+</div>
+
+<div class="section-heading">
+<div>
+<p class="eyebrow">YOUR SPACE</p>
+<h2>What would you like to record?</h2>
+</div>
+</div>
+
+<div class="feature-grid">
+
+<button class="feature-card" data-page="pain">
+<span class="feature-icon">♡</span>
+<strong>Track pain</strong>
+<small>Record levels, locations and notes</small>
+</button>
+
+<button class="feature-card" data-page="conditions">
+<span class="feature-icon">✿</span>
+<strong>My conditions</strong>
+<small>Keep your health history together</small>
+</button>
+
+<button class="feature-card" data-page="journal">
+<span class="feature-icon">▤</span>
+<strong>Symptom journal</strong>
+<small>Keep a record of how you feel</small>
+</button>
+
+<button class="feature-card" data-page="medications">
+<span class="feature-icon">＋</span>
+<strong>Medications</strong>
+<small>Organize your medication list</small>
+</button>
+
+<button class="feature-card" data-page="insights">
+<span class="feature-icon">▥</span>
+<strong>Health insights</strong>
+<small>Review your saved entries</small>
+</button>
+
+</div>
+
+
+<section class="glance-card">
+
+<div class="section-heading compact">
+<div>
+<p class="eyebrow">YOUR JOURNAL</p>
+<h2>Health at a glance</h2>
+</div>
+
+<span class="soft-icon">✧</span>
+</div>
+
+<div class="stats-grid">
+
+<div>
+<span class="stat-label">Entries saved</span>
+<strong id="entryCount">0</strong>
+</div>
+
+<div>
+<span class="stat-label">Latest entry</span>
+<strong id="latestEntry">Not yet</strong>
+</div>
+
+<div>
+<span class="stat-label">Conditions</span>
+<strong id="conditionCount">0</strong>
+</div>
+
+</div>
+
+</section>
+
+
+<section class="support-banner">
+<div>
+<strong>Your health journey matters.</strong>
+<p>
+Small notes today can help you prepare for conversations
+with your care team.
+</p>
+</div>
+
+<span class="leaf-art">✿</span>
+</section>
+
+</section>
+
+
+<!-- PAIN TRACKER -->
+<section id="page-pain" class="page">
+
+<div class="page-heading">
+<p class="eyebrow">PAIN JOURNAL</p>
+<h1>Track pain</h1>
+<p class="muted">
+Record what you notice. There are no right or wrong answers.
+</p>
+</div>
+
+<form id="painForm" class="panel form-panel">
+
+<label for="painLevel">
+Pain level: <strong id="painLevelValue">0</strong> / 10
+</label>
+
+<input id="painLevel" type="range" min="0" max="10" value="0">
+
+<label for="painLocation">Where did you feel it?</label>
+<input id="painLocation" maxlength="100" placeholder="For example: lower back">
+
+<label for="painType">How would you describe it?</label>
+
+<select id="painType">
+<option value="">Choose if helpful</option>
+<option>Aching</option>
+<option>Sharp</option>
+<option>Burning</option>
+<option>Throbbing</option>
+<option>Pressure</option>
+<option>Other</option>
+</select>
+
+<label for="painNotes">Additional notes</label>
+
+<textarea
+id="painNotes"
+rows="4"
+maxlength="2000"
+placeholder="What was happening? How did it affect your day?"
+></textarea>
+
+<button class="button primary full" type="submit">
+Save pain entry
+</button>
+
+</form>
+
+</section>
+
+
+<!-- SYMPTOM JOURNAL -->
+<section id="page-journal" class="page">
+
+<div class="page-heading">
+<p class="eyebrow">DAILY CHECK-IN</p>
+<h1>Symptom journal</h1>
+<p class="muted">
+Make a note of symptoms and how they affect everyday life.
+</p>
+</div>
+
+<form id="symptomForm" class="panel form-panel">
+
+<label for="symptomName">Symptom</label>
+
+<input
+id="symptomName"
+maxlength="120"
+required
+placeholder="For example: fatigue"
+>
+
+<label for="symptomSeverity">
+How much did it affect you?
+<strong id="severityValue">3</strong> / 10
+</label>
+
+<input id="symptomSeverity" type="range" min="0" max="10" value="3">
+
+<label for="symptomWhen">When did you notice it?</label>
+
+<select id="symptomWhen">
+<option>Today</option>
+<option>This morning</option>
+<option>This afternoon</option>
+<option>This evening</option>
+<option>Ongoing</option>
+</select>
+
+<label for="symptomNotes">Notes</label>
+
+<textarea
+id="symptomNotes"
+rows="4"
+maxlength="2000"
+placeholder="Add anything you want to remember."
+></textarea>
+
+<button class="button primary full" type="submit">
+Save symptom
+</button>
+
+</form>
+
+</section>
+
+
+<!-- CONDITIONS -->
+<section id="page-conditions" class="page">
+
+<div class="page-heading">
+<p class="eyebrow">YOUR HEALTH HISTORY</p>
+<h1>My conditions</h1>
+<p class="muted">
+Keep a personal list of diagnosed conditions or health concerns
+you want to remember.
+</p>
+</div>
+
+<form id="conditionForm" class="panel form-panel">
+
+<label for="conditionName">Condition or health concern</label>
+
+<input
+id="conditionName"
+maxlength="140"
+required
+placeholder="Condition name"
+>
+
+<label for="conditionSince">When did it begin or get diagnosed?</label>
+
+<input
+id="conditionSince"
+maxlength="100"
+placeholder="Optional"
+>
+
+<label for="conditionNotes">Notes</label>
+
+<textarea
+id="conditionNotes"
+rows="4"
+maxlength="2000"
+placeholder="Questions, details or notes you want to remember"
+></textarea>
+
+<button class="button primary full" type="submit">
+Save condition
+</button>
+
+</form>
+
+<div id="conditionList" class="entry-list"></div>
+
+</section>
+
+
+<!-- MEDICATIONS -->
+<section id="page-medications" class="page">
+
+<div class="page-heading">
+<p class="eyebrow">PERSONAL ORGANIZER</p>
+<h1>Medications</h1>
+<p class="muted">
+Keep a personal medication list. Follow your prescriber's directions.
+</p>
+</div>
+
+<form id="medicationForm" class="panel form-panel">
+
+<label for="medName">Medication name</label>
+
+<input id="medName" maxlength="120" required placeholder="Medication name">
+
+<label for="medDose">Prescribed dose</label>
+
+<input id="medDose" maxlength="120" placeholder="As written on your label">
+
+<label for="medSchedule">Schedule notes</label>
+
+<input id="medSchedule" maxlength="200" placeholder="For example: morning">
+
+<label for="medNotes">Notes</label>
+
+<textarea id="medNotes" rows="3" maxlength="1000"></textarea>
+
+<button class="button primary full" type="submit">
+Save medication
+</button>
+
+</form>
+
+<div id="medicationList" class="entry-list"></div>
+
+</section>
+
+
+<!-- HEALTH INSIGHTS -->
+<section id="page-insights" class="page">
+
+<div class="page-heading">
+<p class="eyebrow">YOUR HISTORY</p>
+<h1>Health insights</h1>
+<p class="muted">
+Review the information you have chosen to record.
+</p>
+</div>
+
+<div class="stats-grid panel">
+
+<div>
+<span class="stat-label">Pain entries</span>
+<strong id="painCount">0</strong>
+</div>
+
+<div>
+<span class="stat-label">Symptom entries</span>
+<strong id="symptomCount">0</strong>
+</div>
+
+<div>
+<span class="stat-label">Medication items</span>
+<strong id="medCount">0</strong>
+</div>
+
+</div>
+
+<div id="recentEntries" class="entry-list"></div>
+
+<p class="notice">
+HearWell organizes information you enter. It does not diagnose
+conditions or replace advice from a qualified healthcare professional.
 </p>
 
 </section>
 
-<section class="layout">
 
-<div class="card maincard">
+<!-- PROFILE -->
+<section id="page-profile" class="page">
 
-<!-- INTRODUCTION -->
+<div class="page-heading">
+<p class="eyebrow">YOUR ACCOUNT</p>
+<h1>Profile</h1>
+</div>
 
-<div id="intro">
+<div class="panel profile-panel">
+<span class="avatar">♡</span>
 
-<h2>Before you begin</h2>
+<div>
+<strong id="profileEmail"></strong>
+<p class="muted">HearWell account</p>
+</div>
+</div>
 
-<p class="sub">
-A few quick checks will help you get a more
-consistent experience.
+<div class="panel">
+<h2>Your health journal</h2>
+<p class="muted">
+Your entries are saved to your account when connected to Supabase.
+You can export a copy whenever you want.
+</p>
+</div>
+
+<div class="panel">
+<h2>Your data</h2>
+
+<p class="muted">
+Export your journal entries or delete them.
+Keep a separate copy of anything important.
 </p>
 
-<div class="tip">
-
-<div class="tipicon">🎧</div>
-
-<div>
-<strong>Use headphones</strong>
-<span>
-Use comfortable headphones if available.
-This demo cannot verify which ear is receiving sound.
-</span>
-</div>
-
-</div>
-
-<div class="tip">
-
-<div class="tipicon">🌿</div>
-
-<div>
-<strong>Find a quiet place</strong>
-<span>
-Reduce background noise and keep your
-device volume low and comfortable.
-</span>
-</div>
-
-</div>
-
-<div class="tip">
-
-<div class="tipicon">⏸</div>
-
-<div>
-<strong>Take your time</strong>
-<span>
-You can stop at any time. Never turn
-the volume up to make a tone easier to hear.
-</span>
-</div>
-
-</div>
-
-<div class="tip">
-
-<div class="tipicon">🔔</div>
-
-<div>
-<strong>Check your Silent Mode</strong>
-<span>
-If you're using an iPhone, turn Silent Mode
-off before starting. Audio may not play otherwise.
-Keep your volume at a comfortable level.
-</span>
-</div>
-
-</div>
-
-<div class="notice">
-This is an educational listening demo, not a
-calibrated hearing test or medical diagnosis.
-It does not measure hearing thresholds.
-</div>
-
-<!-- HEARING HISTORY QUESTIONNAIRE -->
-
-<div class="hearing-history">
-
-<h2>About your hearing</h2>
-
-<p class="sub">
-Before we begin, tell us a little about your
-hearing experience. This section is optional.
-</p>
-
-<div class="history-question">
-
-<strong>Do you experience any of the following?</strong>
-
-<label>
-<input type="checkbox" name="symptoms" value="Ringing or buzzing in your ears">
-Ringing or buzzing in your ears
-</label>
-
-<label>
-<input type="checkbox" name="symptoms" value="Difficulty hearing conversations">
-Difficulty hearing conversations
-</label>
-
-<label>
-<input type="checkbox" name="symptoms" value="Frequently asking people to repeat themselves">
-Frequently asking people to repeat themselves
-</label>
-
-<label>
-<input type="checkbox" name="symptoms" value="Difficulty hearing in noisy environments">
-Difficulty hearing in noisy environments
-</label>
-
-<label>
-<input type="checkbox" name="symptoms" value="One ear hears differently than the other">
-One ear hears differently than the other
-</label>
-
-<label>
-<input type="checkbox" name="symptoms" value="None of these" id="noSymptoms">
-None of these
-</label>
-
-</div>
-
-<div class="history-question">
-
-<strong>Do you have more difficulty hearing with one ear?</strong>
-
-<label>
-<input type="radio" name="earDifficulty" value="Left ear">
-Left ear
-</label>
-
-<label>
-<input type="radio" name="earDifficulty" value="Right ear">
-Right ear
-</label>
-
-<label>
-<input type="radio" name="earDifficulty" value="Both ears">
-Both ears
-</label>
-
-<label>
-<input type="radio" name="earDifficulty" value="Not sure">
-Not sure
-</label>
-
-<label>
-<input type="radio" name="earDifficulty" value="No difficulty">
-No difficulty
-</label>
-
-</div>
-
-<p class="sub">
-Your answers are optional and will not affect
-your listening activity score.
-</p>
-
-</div>
-
-<div style="margin-top:24px">
-
-<button class="btn primary" id="start">
-Start listening →
+<button id="exportData" class="button secondary full" type="button">
+Export my entries
 </button>
-
 </div>
 
-</div>
-
-<!-- HEARING ACTIVITY -->
-
-<div id="test" class="hidden">
-
-<h2>Listen for the tone</h2>
-
-<p class="sub">
-Press play, then choose whether you heard
-the sound.
-</p>
-
-<div class="steps">
-
-<div class="step active"></div>
-<div class="step"></div>
-<div class="step"></div>
-<div class="step"></div>
-<div class="step"></div>
-<div class="step"></div>
-
-</div>
-
-<div class="test-area">
-
-<div class="earpill">
-♫ Tone <span id="toneNumber">1 of 6</span>
-</div>
-
-<div class="frequency" id="frequency">
-250 <small>Hz</small>
-</div>
-
-<div class="wave" id="wave"></div>
-
-<p class="prompt">
-Press play and listen carefully.
-</p>
-
-<div class="actions">
-
-<button class="btn primary" id="play">
-▶ Play tone
+<button id="deleteData" class="text-button danger" type="button">
+Delete my journal entries
 </button>
-
-<button class="btn secondary" id="heard" disabled>
-I heard it
-</button>
-
-<button class="btn quiet" id="notheard" disabled>
-I didn't hear it
-</button>
-
-</div>
-
-<div class="status" id="status" role="status" aria-live="polite">
-Keep your volume low and comfortable.
-</div>
-
-</div>
-
-<div class="progressrow">
-<span>Activity progress</span>
-<span id="progressText">0 of 6</span>
-</div>
-
-<div class="progressbar">
-<div class="progressfill" id="progress"></div>
-</div>
-
-<div style="margin-top:18px">
-
-<button class="btn quiet" id="stop">
-Stop activity
-</button>
-
-</div>
-
-</div>
-
-<!-- RESULTS -->
-
-<div id="results" class="result">
-
-<div class="eyebrow">
-<span class="dot"></span>
-Activity complete
-</div>
-
-<h2 style="margin-top:17px">
-Your listening recap
-</h2>
-
-<div class="resultscore" id="score">—</div>
-
-<p id="summary">
-Your responses are summarized below.
-</p>
-
-<div class="resultgrid">
-
-<div class="resultbox">
-<strong id="heardCount">0</strong>
-<span>Tones you reported hearing</span>
-</div>
-
-<div class="resultbox">
-<strong id="missedCount">0</strong>
-<span>Tones you did not report hearing</span>
-</div>
-
-</div>
-
-<h2 style="font-size:15px">
-Your responses by tone
-</h2>
-
-<div class="history" id="history"></div>
-
-<!-- HEARING HISTORY RESULTS -->
-
-<div id="hearingHistory" class="hearing-history-results"></div>
-
-<!-- PROFESSIONAL RECOMMENDATION -->
-
-<div id="followup" class="followup hidden">
-
-<h3>Consider a professional hearing check</h3>
-
-<p>
-You reported not hearing one or more tones
-in this activity. This does not diagnose
-hearing loss, but it is a good reason to
-arrange a professional hearing evaluation.
-</p>
-
-<a
-class="findlink"
-href="https://www.asha.org/profind/"
-target="_blank"
-rel="noopener noreferrer"
->
-Find an audiologist ↗
-</a>
-
-</div>
-
-<div class="notice">
-These results only describe your responses in
-this browser activity. They cannot determine
-whether your hearing is normal or identify
-hearing loss. If you have concerns, arrange
-a professional hearing evaluation.
-</div>
-
-<div style="margin-top:22px">
-
-<button class="btn primary" id="again">
-Try again
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-<!-- SIDEBAR -->
-
-<aside class="card sidecard">
-
-<h2>A calmer way to listen</h2>
-
-<p class="sub">
-A little preparation goes a long way.
-</p>
-
-<div class="tip">
-
-<div class="tipicon">🔉</div>
-
-<div>
-<strong>Comfort first</strong>
-<span>
-Keep device volume at a low,
-comfortable setting.
-</span>
-</div>
-
-</div>
-
-<div class="tip">
-
-<div class="tipicon">🚫</div>
-
-<div>
-<strong>No guessing needed</strong>
-<span>
-Choose the response that matches
-what you actually heard.
-</span>
-</div>
-
-</div>
-
-<div class="tip">
-
-<div class="tipicon">🔒</div>
-
-<div>
-<strong>Private by design</strong>
-<span>
-Your answers stay in this page
-and are not uploaded.
-</span>
-</div>
-
-</div>
-
-<div class="notice">
-
-<strong>Good to know</strong><br>
-
-This demo uses your device speakers or
-headphones, which are not calibrated
-medical equipment.
-
-</div>
-
-</aside>
 
 </section>
 
 </main>
 
-<footer class="shell foot">
 
-<span>© 2026 HearWell · Hearing awareness demo</span>
+<!-- BOTTOM NAVIGATION -->
+<nav class="bottom-nav" aria-label="Main navigation">
 
-<span>Not a substitute for a professional hearing evaluation.</span>
+<button class="nav-item active" data-page="home">
+<span>⌂</span>
+<small>Home</small>
+</button>
 
-</footer>
+<button class="nav-item" data-page="pain">
+<span>♡</span>
+<small>Pain</small>
+</button>
+
+<button class="nav-item" data-page="journal">
+<span>▤</span>
+<small>Journal</small>
+</button>
+
+<button class="nav-item" data-page="insights">
+<span>▥</span>
+<small>History</small>
+</button>
+
+<button class="nav-item" data-page="profile">
+<span>○</span>
+<small>Profile</small>
+</button>
+
+</nav>
+
+</div>
+
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- HEARWELL JAVASCRIPT -->
+<script src="first.js"></script>
 
 </body>
 </html>
-
